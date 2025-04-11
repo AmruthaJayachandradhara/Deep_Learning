@@ -15,9 +15,13 @@ Datasets: ISIC 2017, ISIC 2018 and ISIC 2019 for classification.
 The classification stage will involve the use of Convolutional Neural Network (CNN) architectures. ResNet and InceptionNet will be specifically utilized due to their effectiveness in medical image analysis. These models will be adapted using transfer learning to leverage pre-trained weights from large datasets like ImageNet.
 
 Customization will be performed to tailor the models for multi-label skin lesion classification.
+
 ●	A pooling layer will be added to reduce the spatial dimensions of the feature maps.
+
 ●	Batch Normalization will be used to stabilize training and improve convergence speed.
+
 ●	ReLU activation will be applied to introduce non-linearity to the network.
+
 ●	Sigmoid activation will be used in the output layer to support multi-label classification.
 
 Implementation:

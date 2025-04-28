@@ -9,13 +9,9 @@ from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 import cv2
 
-
-
 from DeepLearning_project.src.data.load_data import create_labels
 from DeepLearning_project.src.data.preprocess import load_ben_color
 from DeepLearning_project.src.models.model import create_model
-
-
 
 #config
 DATA_DIR = "DeepLearning_project/data"
@@ -72,3 +68,31 @@ val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
 model = create_model(num_classes=NUM_CLASSES).to(DEVICE)
 criterion = nn.BCELoss()
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
+
+#TRAINING
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{EPOCHS}"):
+        images, labels = images.to(DEVICE), labels.to(DEVICE)
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+        train_loss += loss.item()
+    print(f"Epoch {epoch+1} Training Loss: {train_loss/len(train_loader):.4f}")
+
+#EVALUATION
+model.eval()
+correct = 0
+total = 0
+with torch.no_grad():
+    for images, labels in val_loader:
+        images, labels = images.to(DEVICE), labels.to(DEVICE)
+        outputs = model(images)
+        preds = outputs > 0.5
+        correct += (preds == labels.bool()).sum().item()
+        total += labels.numel()
+print(f"Validation Accuracy: {correct/total:.4f}")
+

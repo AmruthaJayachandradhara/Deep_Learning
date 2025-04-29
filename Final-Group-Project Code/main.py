@@ -30,8 +30,9 @@ NUM_CLASSES = 9
 
 
 class SkinLesionDataset(Dataset):
-    def __init__(self, dataframe):
+    def __init__(self, dataframe, transform=None):
         self.df = dataframe
+        self.transform = transform
         self.image_paths = dataframe['image'].values
         self.labels = dataframe.drop(columns=['image']).values.astype(np.float32)
 
@@ -44,6 +45,9 @@ class SkinLesionDataset(Dataset):
 
         image = cv2.imread(img_path)
         image = load_ben_color(image)
+
+        if self.transform:
+            image = self.transform(image)
 
         label = torch.tensor(self.labels[idx])
         return image, label
@@ -72,3 +76,30 @@ val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
 model = create_model(num_classes=NUM_CLASSES).to(DEVICE)
 criterion = nn.BCELoss()
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
+
+#training
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{EPOCHS}"):
+        images, labels = images.to(DEVICE), labels.to(DEVICE)
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+        train_loss += loss.item()
+    print(f"Epoch {epoch+1} Training Loss: {train_loss/len(train_loader):.4f}")
+
+#evaluation
+model.eval()
+correct = 0
+total = 0
+with torch.no_grad():
+    for images, labels in val_loader:
+        images, labels = images.to(DEVICE), labels.to(DEVICE)
+        outputs = model(images)
+        preds = outputs > 0.5
+        correct += (preds == labels.bool()).sum().item()
+        total += labels.numel()
+print(f"Validation Accuracy: {correct/total:.4f}")

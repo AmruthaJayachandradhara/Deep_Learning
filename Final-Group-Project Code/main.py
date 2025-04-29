@@ -96,3 +96,8 @@ with torch.no_grad():
         total += labels.numel()
 print(f"Validation Accuracy: {correct/total:.4f}")
 
+# Save trained weights
+torch.save(model.state_dict(), os.path.join(abspath_curr, "model_weights.pt"))
+print("Model weights saved at:", os.path.join(abspath_curr, "model_weights.pt"))
+
+

@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import torch
 import torch.nn as nn
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
@@ -24,6 +25,44 @@ BATCH_SIZE = 32
 EPOCHS = 5
 NUM_CLASSES = 9
 
+# PREPROCESSING FUNCTIONS
+
+def crop_image_from_gray(img, tol=7):
+    if img.ndim == 2:
+        mask = img > tol
+        return img[np.ix_(mask.any(1), mask.any(0))]
+    elif img.ndim == 3:
+        gray_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        mask = gray_img > tol
+        check_shape = img[:, :, 0][np.ix_(mask.any(1), mask.any(0))].shape[0]
+        if check_shape == 0:
+            return img
+        else:
+            img1 = img[:, :, 0][np.ix_(mask.any(1), mask.any(0))]
+            img2 = img[:, :, 1][np.ix_(mask.any(1), mask.any(0))]
+            img3 = img[:, :, 2][np.ix_(mask.any(1), mask.any(0))]
+            img = np.stack([img1, img2, img3], axis=-1)
+        return img
+
+def clahe_lab(img):
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    lab_planes = list(cv2.split(lab))   # <-- convert tuple to list here
+    clahe = cv2.createCLAHE(clipLimit=1.0)
+    lab_planes[0] = clahe.apply(lab_planes[0])
+    lab = cv2.merge(lab_planes)
+    rgb = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+    return rgb
+
+
+def load_ben_color(image, sigmaX):
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = crop_image_from_gray(image)
+    image = clahe_lab(image)
+    image = cv2.resize(image, (IMG_SIZE, IMG_SIZE))
+    image = cv2.addWeighted(image, 4, cv2.GaussianBlur(image, (0, 0), sigmaX), -4, 128)
+    return image
+
+# DATASET CLASS
 
 class SkinLesionDataset(Dataset):
     def __init__(self, dataframe):

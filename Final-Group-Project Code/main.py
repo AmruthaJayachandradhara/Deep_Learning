@@ -74,8 +74,11 @@ val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
 #MODEL SETUP
 
 model = create_model(num_classes=NUM_CLASSES).to(DEVICE)
+tracker = MetricTracker()
 criterion = nn.BCELoss()
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
+
+
 
 #training
 for epoch in range(EPOCHS):
@@ -90,6 +93,9 @@ for epoch in range(EPOCHS):
         optimizer.step()
         train_loss += loss.item()
     print(f"Epoch {epoch+1} Training Loss: {train_loss/len(train_loader):.4f}")
+    tracker.log_train_loss(train_loss / len(train_loader))
+    tracker.log_val_accuracy(correct / total)
+
 
 #evaluation
 model.eval()
@@ -103,3 +109,5 @@ with torch.no_grad():
         correct += (preds == labels.bool()).sum().item()
         total += labels.numel()
 print(f"Validation Accuracy: {correct/total:.4f}")
+
+tracker.plot()

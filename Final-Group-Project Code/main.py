@@ -4,6 +4,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torchvision import transforms 
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
@@ -54,6 +56,28 @@ class SkinLesionDataset(Dataset):
         label = torch.tensor(self.labels[idx])
         return image, label
 
+# Training transforms with augmentations
+train_transform = transforms.Compose([
+    transforms.ToPILImage(),
+    transforms.RandomResizedCrop(IMG_SIZE),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomVerticalFlip(),
+    transforms.RandomRotation(degrees=20),
+    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225])
+])
+
+# Validation transforms (no augmentation)
+val_transform = transforms.Compose([
+    transforms.ToPILImage(),
+    transforms.Resize((IMG_SIZE, IMG_SIZE)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225])
+])
+
 
 #CREATE LABELS
 if not os.path.exists(LABELS_NPY):
@@ -69,6 +93,8 @@ df_labels = pd.DataFrame(labels, columns=label_columns)
 df_combined = pd.concat([df_combined, df_labels], axis=1)
 
 train_df, val_df = train_test_split(df_combined, test_size=0.2, random_state=42)
+train_dataset = SkinLesionDataset(train_df, transform=train_transform)
+val_dataset = SkinLesionDataset(val_df, transform=val_transform)
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
 
@@ -79,6 +105,7 @@ model = create_model(num_classes=NUM_CLASSES).to(DEVICE)
 tracker = MetricTracker()
 criterion = nn.BCELoss()
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
+scheduler = ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=1, verbose=True)
 
 
 
@@ -111,5 +138,10 @@ with torch.no_grad():
         correct += (preds == labels.bool()).sum().item()
         total += labels.numel()
 print(f"Validation Accuracy: {correct/total:.4f}")
+
+# Save trained weights
+MODEL_SAVE_PATH = os.path.join(DATA_DIR, "model_weights.pt")
+torch.save(model.state_dict(), MODEL_SAVE_PATH)
+print("Model weights saved at:", MODEL_SAVE_PATH)
 
 tracker.plot()

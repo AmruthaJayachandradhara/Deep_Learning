@@ -1,39 +1,35 @@
-
-from google.colab import drive
 import os
-import sys
-import cv2
-import torch
-import numpy as np
 import pandas as pd
-from torch import nn, optim
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torchvision import transforms 
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from torchvision import transforms, models
 from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+import cv2
 
-# Mount Google Drive
-drive.mount('/content/drive')
 
-# Paths
-abspath_curr = '/content/drive/My Drive/Colab Notebooks/DeepLearning_project/'
-DATA_CSV = os.path.join(abspath_curr, 'metadata.csv')
-LABELS_NPY = os.path.join(abspath_curr, 'labels.npy')
-IMAGE_DIR = os.path.join(abspath_curr, 'img100')
 
-# ===========================
-# CONFIGURATION
-# ===========================
+from DeepLearning_project.src.data.load_data import create_labels
+from DeepLearning_project.src.data.preprocess import load_ben_color
+from DeepLearning_project.src.models.model import create_model
+from DeepLearning_project.src.result.resultviz import MetricTracker
+
+
+#config
+DATA_DIR = "DeepLearning_project/data"
+IMAGE_DIR = os.path.join(DATA_DIR, "images")
+METADATA_CSV = os.path.join(DATA_DIR, "metadata.csv")
+LABELS_NPY = os.path.join(DATA_DIR, "labels.npy")
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 IMG_SIZE = 224
 BATCH_SIZE = 32
 EPOCHS = 5
 NUM_CLASSES = 9
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# ===========================
-# PREPROCESSING FUNCTIONS
-# ===========================
 def crop_image_from_gray(img, tol=7):
     if img.ndim == 2:
         mask = img > tol
@@ -69,48 +65,32 @@ def load_ben_color(image, sigmaX):
     image = cv2.addWeighted(image, 4, cv2.GaussianBlur(image, (0, 0), sigmaX), -4, 128)
     return image
 
-# ===========================
-# DATASET CLASS
-# ===========================
+
 class SkinLesionDataset(Dataset):
-    def __init__(self, df, transform=None, preprocess_sigmaX=2):
-        self.df = df
+    def __init__(self, dataframe, transform=None):
+        self.df = dataframe
         self.transform = transform
-        self.image_paths = df['image'].values
-        self.labels = df.drop(columns=['image']).values.astype(np.float32)
-        self.preprocess_sigmaX = preprocess_sigmaX
+        self.image_paths = dataframe['image'].values
+        self.labels = dataframe.drop(columns=['image']).values.astype(np.float32)
 
     def __len__(self):
         return len(self.df)
 
     def __getitem__(self, idx):
-        filename = self.image_paths[idx]
-        if not filename.endswith('.jpg'):
-            filename += '.jpg'
+        img_name = self.image_paths[idx]
+        img_path = os.path.join(IMAGE_DIR, img_name + '.jpg')
 
-        image_path = os.path.join(IMAGE_DIR, filename)
-        if not os.path.exists(image_path):
-            raise FileNotFoundError(f"Image not found: {image_path}")
-
-        image = cv2.imread(image_path)
-        if image is None:
-            raise ValueError(f"Failed to load image: {image_path}")
-
-        # Apply Ben Graham preprocessing
-        image = load_ben_color(image, sigmaX=self.preprocess_sigmaX)
+        image = cv2.imread(img_path)
+        image = load_ben_color(image, sigmaX=2)
 
         if self.transform:
             image = self.transform(image)
 
         label = torch.tensor(self.labels[idx])
         return image, label
-
-# ===========================
-# TRANSFORMS
-# ===========================
+        
 # Training transforms with augmentations
-
- train_transform = transforms.Compose([
+train_transform = transforms.Compose([
     transforms.ToPILImage(),
     transforms.RandomResizedCrop(IMG_SIZE),
     transforms.RandomHorizontalFlip(),
@@ -131,10 +111,13 @@ val_transform = transforms.Compose([
                          std=[0.229, 0.224, 0.225])
 ])
 
-# ===========================
-# DATA LOADING
-# ===========================
-df = pd.read_csv(DATA_CSV)
+
+#CREATE LABELS
+if not os.path.exists(LABELS_NPY):
+    create_labels(METADATA_CSV, DATA_DIR)
+
+#LOAD DATA
+df = pd.read_csv(METADATA_CSV)
 labels = np.load(LABELS_NPY)
 
 df_combined = pd.DataFrame({'image': df['image']})
@@ -143,37 +126,25 @@ df_labels = pd.DataFrame(labels, columns=label_columns)
 df_combined = pd.concat([df_combined, df_labels], axis=1)
 
 train_df, val_df = train_test_split(df_combined, test_size=0.2, random_state=42)
-
 train_dataset = SkinLesionDataset(train_df, transform=train_transform)
 val_dataset = SkinLesionDataset(val_df, transform=val_transform)
-
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
 
-# ===========================
-# MODEL
-# ===========================
-model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
-model.fc = nn.Sequential(
-    nn.Linear(model.fc.in_features, 256),
-    nn.ReLU(),
-    nn.Dropout(0.5),
-    nn.Linear(256, NUM_CLASSES),
-    nn.Sigmoid()
-)
-model = model.to(DEVICE)
 
-# ===========================
-# TRAINING
-# ===========================
+#MODEL SETUP
+
+model = create_model(num_classes=NUM_CLASSES).to(DEVICE)
+tracker = MetricTracker()
 criterion = nn.BCELoss()
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
-
 scheduler = ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=1, verbose=True)
 
+
+#training
 for epoch in range(EPOCHS):
     model.train()
-    train_loss = 0
+    train_loss = 0.0
     for images, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{EPOCHS}"):
         images, labels = images.to(DEVICE), labels.to(DEVICE)
         optimizer.zero_grad()
@@ -182,27 +153,33 @@ for epoch in range(EPOCHS):
         loss.backward()
         optimizer.step()
         train_loss += loss.item()
-    print(f"Train Loss: {train_loss / len(train_loader):.4f}")
 
-# ===========================
-# EVALUATION
-# ===========================
-model.eval()
-correct = 0
-total = 0
-with torch.no_grad():
-    for images, labels in val_loader:
-        images, labels = images.to(DEVICE), labels.to(DEVICE)
-        outputs = model(images)
-        predicted = outputs > 0.5
-        correct += (predicted == labels.bool()).sum().item()
-        total += labels.numel()
-print(f"Validation Accuracy: {correct / total:.4f}")
+    avg_train_loss = train_loss / len(train_loader)
+    print(f"Epoch {epoch+1} Training Loss: {avg_train_loss:.4f}")
+    tracker.log_train_loss(avg_train_loss)
 
+# Evaluation (Validation accuracy after each epoch)
+    model.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for images, labels in val_loader:
+            images, labels = images.to(DEVICE), labels.to(DEVICE)
+            outputs = model(images)
+            preds = outputs > 0.5
+            correct += (preds == labels.bool()).sum().item()
+            total += labels.numel()
+    val_accuracy = correct / total
+    print(f"Epoch {epoch+1} Validation Accuracy: {val_accuracy:.4f}")
+    tracker.log_val_accuracy(val_accuracy)
 
-val_accuracy = correct / total
-scheduler.step(val_accuracy)
+    # Update scheduler
+    scheduler.step(val_accuracy)
 
 # Save trained weights
-torch.save(model.state_dict(), os.path.join(abspath_curr, "model_weights.pt"))
-print("Model weights saved at:", os.path.join(abspath_curr, "model_weights.pt"))
+MODEL_SAVE_PATH = os.path.join(DATA_DIR, "model_weights.pt")
+torch.save(model.state_dict(), MODEL_SAVE_PATH)
+print("Model weights saved at:", MODEL_SAVE_PATH)
+
+
+tracker.plot()

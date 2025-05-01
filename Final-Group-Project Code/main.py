@@ -1,37 +1,32 @@
 import os
+import cv2
 import pandas as pd
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import transforms 
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import Dataset, DataLoader
+from torchvision import transforms
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
-import cv2
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+from sklearn.metrics import accuracy_score, precision_score, recall_score
 
-
-
-from DeepLearning_project.src.data.load_data import create_labels
-from DeepLearning_project.src.data.preprocess import load_ben_color
-from DeepLearning_project.src.models.model import create_model
-from DeepLearning_project.src.result.resultviz import MetricTracker
-
-
-
+from src.data.load_data import create_labels
+from src.data.preprocess import load_ben_color
+from src.models.model import create_model
+from src.results.resultviz import MetricTracker
 
 #config
-DATA_DIR = "DeepLearning_project/data"
-IMAGE_DIR = os.path.join(DATA_DIR, "images")
-METADATA_CSV = os.path.join(DATA_DIR, "metadata.csv")
+DATA_DIR = "ISIC_Dataset"
+IMAGE_DIR = os.path.join(DATA_DIR, "ISIC_2019_Training_Input")
+METADATA_CSV = os.path.join(DATA_DIR, "ISIC_2019_Training_GroundTruth.csv")
 LABELS_NPY = os.path.join(DATA_DIR, "labels.npy")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 IMG_SIZE = 224
-BATCH_SIZE = 32
-EPOCHS = 5
+BATCH_SIZE = 64
+EPOCHS = 6
 NUM_CLASSES = 9
-
 
 class SkinLesionDataset(Dataset):
     def __init__(self, dataframe, transform=None):
@@ -48,14 +43,19 @@ class SkinLesionDataset(Dataset):
         img_path = os.path.join(IMAGE_DIR, img_name + '.jpg')
 
         image = cv2.imread(img_path)
-        image = load_ben_color(image)
+        image = load_ben_color(image, sigmaX=2)
 
         if self.transform:
             image = self.transform(image)
 
         label = torch.tensor(self.labels[idx])
         return image, label
-
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+=======
+>>>>>>> Stashed changes
+        
 # Training transforms with augmentations
 train_transform = transforms.Compose([
     transforms.ToPILImage(),
@@ -77,6 +77,7 @@ val_transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406],
                          std=[0.229, 0.224, 0.225])
 ])
+>>>>>>> Stashed changes
 
 
 #CREATE LABELS
@@ -93,10 +94,23 @@ df_labels = pd.DataFrame(labels, columns=label_columns)
 df_combined = pd.concat([df_combined, df_labels], axis=1)
 
 train_df, val_df = train_test_split(df_combined, test_size=0.2, random_state=42)
-train_dataset = SkinLesionDataset(train_df, transform=train_transform)
-val_dataset = SkinLesionDataset(val_df, transform=val_transform)
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
+=======
+=======
+>>>>>>> Stashed changes
+train_dataset = SkinLesionDataset(train_df, transform=train_transform)
+val_dataset = SkinLesionDataset(val_df, transform=val_transform)
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
+val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, num_workers=0)
+
+
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
 
 
 #MODEL SETUP
@@ -104,48 +118,145 @@ val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
 model = create_model(num_classes=NUM_CLASSES).to(DEVICE)
 tracker = MetricTracker()
 criterion = nn.BCELoss()
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
-scheduler = ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=1, verbose=True)
+=======
+optimizer = optim.Adam(model.parameters(), lr=1e-3)
+scheduler = ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=1)
+>>>>>>> Stashed changes
+=======
+optimizer = optim.Adam(model.parameters(), lr=1e-3)
+scheduler = ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=1)
+>>>>>>> Stashed changes
 
 
-def train():
 #training
+from torch.nn.functional import sigmoid
+def train():
     for epoch in range(EPOCHS):
         model.train()
         train_loss = 0.0
-        for images, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{EPOCHS}"):
+        all_train_preds = []
+        all_train_labels = []
+
+        for images, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{EPOCHS} - Training"):
             images, labels = images.to(DEVICE), labels.to(DEVICE)
             optimizer.zero_grad()
+
             outputs = model(images)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
+
             train_loss += loss.item()
-        print(f"Epoch {epoch+1} Training Loss: {train_loss/len(train_loader):.4f}")
-        tracker.log_train_loss(train_loss / len(train_loader))
-        tracker.log_val_accuracy(correct / total)
+
+            preds = (outputs > 0.5).int().cpu()
+            all_train_preds.append(preds)
+            all_train_labels.append(labels.cpu().int())
+
+        # Train metrics
+        all_train_preds = torch.cat(all_train_preds).numpy()
+        all_train_labels = torch.cat(all_train_labels).numpy()
+
+        train_accuracy = accuracy_score(all_train_labels, all_train_preds)
+        train_precision = precision_score(all_train_labels, all_train_preds, average='macro', zero_division=0)
+        train_recall = recall_score(all_train_labels, all_train_preds, average='macro', zero_division=0)
+
+        avg_train_loss = train_loss / len(train_loader)
+        print(f"Epoch {epoch+1} Training Loss: {avg_train_loss:.4f}")
+        print(f"Train Accuracy: {train_accuracy:.4f} | Precision: {train_precision:.4f} | Recall: {train_recall:.4f}")
+        tracker.log_train_loss(avg_train_loss)
 
 
-#evaluation
-model.eval()
-correct = 0
-total = 0
-with torch.no_grad():
-    for images, labels in val_loader:
-        images, labels = images.to(DEVICE), labels.to(DEVICE)
-        outputs = model(images)
-        preds = outputs > 0.5
-        correct += (preds == labels.bool()).sum().item()
-        total += labels.numel()
-print(f"Validation Accuracy: {correct/total:.4f}")
+    # Evaluation 
+        model.eval()
+        val_loss = 0.0
+        all_val_preds = []
+        all_val_labels = []
+<<<<<<< Updated upstream
 
-# Save trained weights
-MODEL_SAVE_PATH = os.path.join(DATA_DIR, "model_weights.pt")
-torch.save(model.state_dict(), MODEL_SAVE_PATH)
-print("Model weights saved at:", MODEL_SAVE_PATH)
-
+<<<<<<< Updated upstream
 tracker.plot()
+=======
+        with torch.no_grad():
+            for images, labels in val_loader:
+                images, labels = images.to(DEVICE), labels.to(DEVICE)
+                outputs = model(images)
+                loss = criterion(outputs, labels)
+                val_loss += loss.item()
+
+                preds = (outputs > 0.5).int().cpu()
+                all_val_preds.append(preds)
+                all_val_labels.append(labels.cpu().int())
+
+        # Val metrics
+        all_val_preds = torch.cat(all_val_preds).numpy()
+        all_val_labels = torch.cat(all_val_labels).numpy()
+
+        val_accuracy = accuracy_score(all_val_labels, all_val_preds)
+        val_precision = precision_score(all_val_labels, all_val_preds, average='macro', zero_division=0)
+        val_recall = recall_score(all_val_labels, all_val_preds, average='macro', zero_division=0)
+
+        avg_val_loss = val_loss / len(val_loader)
+        print(f"Epoch {epoch+1} Validation Loss: {avg_val_loss:.4f}")
+        print(f"Val Accuracy: {val_accuracy:.4f} | Precision: {val_precision:.4f} | Recall: {val_recall:.4f}")
+        tracker.log_val_loss(avg_val_loss)
+
+        # Update LR scheduler
+        scheduler.step(avg_val_loss)
+
+
+
+    # Save trained weights
+    MODEL_SAVE_PATH = os.path.join(DATA_DIR, "model_weights_15.pt")
+    torch.save(model.state_dict(), MODEL_SAVE_PATH)
+    print("Model weights saved at:", MODEL_SAVE_PATH)
+
+    tracker.plot()
+
+>>>>>>> Stashed changes
+=======
+
+        with torch.no_grad():
+            for images, labels in val_loader:
+                images, labels = images.to(DEVICE), labels.to(DEVICE)
+                outputs = model(images)
+                loss = criterion(outputs, labels)
+                val_loss += loss.item()
+
+                preds = (outputs > 0.5).int().cpu()
+                all_val_preds.append(preds)
+                all_val_labels.append(labels.cpu().int())
+
+        # Val metrics
+        all_val_preds = torch.cat(all_val_preds).numpy()
+        all_val_labels = torch.cat(all_val_labels).numpy()
+
+        val_accuracy = accuracy_score(all_val_labels, all_val_preds)
+        val_precision = precision_score(all_val_labels, all_val_preds, average='macro', zero_division=0)
+        val_recall = recall_score(all_val_labels, all_val_preds, average='macro', zero_division=0)
+
+        avg_val_loss = val_loss / len(val_loader)
+        print(f"Epoch {epoch+1} Validation Loss: {avg_val_loss:.4f}")
+        print(f"Val Accuracy: {val_accuracy:.4f} | Precision: {val_precision:.4f} | Recall: {val_recall:.4f}")
+        tracker.log_val_loss(avg_val_loss)
+
+        # Update LR scheduler
+        scheduler.step(avg_val_loss)
+
+
+
+    # Save trained weights
+    MODEL_SAVE_PATH = os.path.join(DATA_DIR, "model_weights_15.pt")
+    torch.save(model.state_dict(), MODEL_SAVE_PATH)
+    print("Model weights saved at:", MODEL_SAVE_PATH)
+
+    tracker.plot()
+
+>>>>>>> Stashed changes
 
 
 if __name__ == "__main__":
     train()
+

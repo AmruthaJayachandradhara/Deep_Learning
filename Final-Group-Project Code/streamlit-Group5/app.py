@@ -1,4 +1,9 @@
 import streamlit as st
+import os
+import gdown
+if not os.path.exists("model_weights.pt"):
+    url = "https://drive.google.com/file/d/1oOxjSwphbIz_aZa470t1MD3MS1vne7ma/view?usp=sharing"
+    gdown.download(url, "model_weights.pt", quiet=False)
 import torch
 import torch.nn.functional as F
 import torch.nn as nn

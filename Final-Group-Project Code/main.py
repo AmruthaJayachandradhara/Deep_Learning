@@ -15,7 +15,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score
 from src.data.load_data import create_labels
 from src.data.preprocess import load_ben_color
 from src.models.model import create_model
-from src.results.resultviz import MetricTracker
+from src.result.resultviz import MetricTracker
 
 #config
 DATA_DIR = "ISIC_Dataset"

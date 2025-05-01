@@ -36,7 +36,7 @@ We built an interactive demo using [Streamlit](https://streamlit.io/) to showcas
 
 1. Navigate to the streamlit app folder:
    ```bash
-   cd Final-Project-Group5/streamlit_app
+   cd Deep_Learning/streamlit_app
    ```
 
 2. (Optional) Create and activate a virtual environment:

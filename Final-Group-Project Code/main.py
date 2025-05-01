@@ -51,7 +51,10 @@ class SkinLesionDataset(Dataset):
         label = torch.tensor(self.labels[idx])
         return image, label
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
         
 # Training transforms with augmentations
 train_transform = transforms.Compose([
@@ -92,15 +95,21 @@ df_combined = pd.concat([df_combined, df_labels], axis=1)
 
 train_df, val_df = train_test_split(df_combined, test_size=0.2, random_state=42)
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
 =======
+=======
+>>>>>>> Stashed changes
 train_dataset = SkinLesionDataset(train_df, transform=train_transform)
 val_dataset = SkinLesionDataset(val_df, transform=val_transform)
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, num_workers=0)
 
 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
 
@@ -110,7 +119,12 @@ model = create_model(num_classes=NUM_CLASSES).to(DEVICE)
 tracker = MetricTracker()
 criterion = nn.BCELoss()
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
+=======
+optimizer = optim.Adam(model.parameters(), lr=1e-3)
+scheduler = ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=1)
+>>>>>>> Stashed changes
 =======
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
 scheduler = ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=1)
@@ -160,10 +174,50 @@ def train():
         val_loss = 0.0
         all_val_preds = []
         all_val_labels = []
+<<<<<<< Updated upstream
 
 <<<<<<< Updated upstream
 tracker.plot()
 =======
+        with torch.no_grad():
+            for images, labels in val_loader:
+                images, labels = images.to(DEVICE), labels.to(DEVICE)
+                outputs = model(images)
+                loss = criterion(outputs, labels)
+                val_loss += loss.item()
+
+                preds = (outputs > 0.5).int().cpu()
+                all_val_preds.append(preds)
+                all_val_labels.append(labels.cpu().int())
+
+        # Val metrics
+        all_val_preds = torch.cat(all_val_preds).numpy()
+        all_val_labels = torch.cat(all_val_labels).numpy()
+
+        val_accuracy = accuracy_score(all_val_labels, all_val_preds)
+        val_precision = precision_score(all_val_labels, all_val_preds, average='macro', zero_division=0)
+        val_recall = recall_score(all_val_labels, all_val_preds, average='macro', zero_division=0)
+
+        avg_val_loss = val_loss / len(val_loader)
+        print(f"Epoch {epoch+1} Validation Loss: {avg_val_loss:.4f}")
+        print(f"Val Accuracy: {val_accuracy:.4f} | Precision: {val_precision:.4f} | Recall: {val_recall:.4f}")
+        tracker.log_val_loss(avg_val_loss)
+
+        # Update LR scheduler
+        scheduler.step(avg_val_loss)
+
+
+
+    # Save trained weights
+    MODEL_SAVE_PATH = os.path.join(DATA_DIR, "model_weights_15.pt")
+    torch.save(model.state_dict(), MODEL_SAVE_PATH)
+    print("Model weights saved at:", MODEL_SAVE_PATH)
+
+    tracker.plot()
+
+>>>>>>> Stashed changes
+=======
+
         with torch.no_grad():
             for images, labels in val_loader:
                 images, labels = images.to(DEVICE), labels.to(DEVICE)

@@ -1,9 +1,9 @@
 
-# 🧠 Deep Learning Final Project - Skin Lesion Classification (Group 5)
+# Classification of Skin Lesion Melanoma Detection (Group 5)
 
 This repository contains the implementation of our deep learning final project focused on **multi-label classification of dermoscopic images** using a ResNet18-based convolutional neural network. The project includes complete preprocessing, model training, evaluation, and a Streamlit demo for interactive testing.
 
-## 📌 Project Overview
+## Project Overview
 
 Early detection of skin cancer, particularly melanoma, is critical for patient survival. We leverage **deep learning** techniques on the **HAM10000** dataset to classify dermoscopic images into **nine skin lesion categories**:
 
@@ -19,7 +19,7 @@ Early detection of skin cancer, particularly melanoma, is critical for patient s
 | SCC        | Squamous cell carcinoma      |
 | UNK        | Unknown/None of the above    |
 
-## 📁 Folder Structure
+## Folder Structure
 
 ```
 Final-Project-Group5/
@@ -40,23 +40,23 @@ Final-Project-Group5/
 │   └── README.md                 # Code-specific execution guide
 │
 ├── Group-Report.pdf              # Final team report (Group 5)
-├── Individual-Report-Rasika.pdf  # Rasika's contribution report
-└── README.md                     # 🔹 You are here!
+├── Individual-Final-Project-Report 
+└── README.md                     # You are here!
 ```
 
-## ⚙️ Technologies Used
+## Technologies Used
 
 - **Language**: Python
 - **Frameworks**: PyTorch, Streamlit
 - **Libraries**: OpenCV, NumPy, Pandas, Altair, scikit-learn, tqdm
 
-## 🚀 Running the Project
+## Running the Project
 
 ### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/YourUsername/Deep_Learning.git
-cd Deep_Learning/Final-Project-Group5/
+cd Deep_Learning/
 ```
 
 ### 2. Setup Environment
@@ -76,7 +76,7 @@ cd Code
 python main.py
 ```
 
-This trains the model for 5 epochs using a ResNet18 architecture.
+This trains the model for 6 epochs using a ResNet18 architecture.
 
 ### 4. Launch Streamlit App
 
@@ -94,13 +94,12 @@ Upload a skin lesion image and view predicted class probabilities interactively.
 - **Evaluation**: Training/Validation accuracy and loss curves with MetricTracker.
 - **UI**: Streamlit-powered interactive prediction interface.
 
-## 👩‍💻 Contributors (Group 5)
+## Contributors (Group 5)
 
 - **Rasika Nilatkar** – Streamlit app, model setup, data augmentation  
 - **Amrutha Jayachandradhara** – Preprocessing, training pipeline, CLAHE/BenGraham methods  
-- **[Other Members]** – [Add contributions here]
 
-## 🔮 Future Scope
+## Future Scope
 
 - Replace ResNet18 with more advanced models like EfficientNet or Vision Transformers  
 - Implement skin lesion segmentation as preprocessing  
@@ -108,7 +107,7 @@ Upload a skin lesion image and view predicted class probabilities interactively.
 - Host Streamlit app on cloud for public access  
 - Incorporate Grad-CAM for visual interpretability
 
-## 📚 References
+## References
 
 1. ISIC Archive: [https://www.isic-archive.com](https://www.isic-archive.com)
 2. BCN20000: Dermoscopic Lesions in the Wild (arXiv:1908.02288)

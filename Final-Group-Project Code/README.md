@@ -4,7 +4,7 @@ This folder contains all the code components for our final project on **Melanoma
 
 The goal is to classify skin lesion images into one or more of nine diagnostic categories using a fine-tuned ResNet18 model trained on the **ISIC 2019 dataset**.
 
-## ✅ Code Execution Flow
+## Code Execution Flow
 
 Follow the order below to reproduce the project pipeline:
 
@@ -41,7 +41,7 @@ Follow the order below to reproduce the project pipeline:
 
 ---
 
-## 📦 Requirements
+## Requirements
 
 Make sure to install the dependencies listed in `requirements.txt` before running the scripts.
 
@@ -51,7 +51,7 @@ pip install -r requirements.txt
 
 ---
 
-## 💡 Notes
+## Notes
 
 - Dataset used: [ISIC 2019 Challenge Data](https://challenge2019.isic-archive.com/)
 - Trained weights: `model_weights.pt`
@@ -60,7 +60,7 @@ pip install -r requirements.txt
 
 ---
 
-## 🔗 Contributors
+## Contributors
 
 - Rasika Nilatkar – Data augmentation, model setup, Streamlit UI  
 - Amrutha Jayachandradhara – Preprocessing, training pipeline

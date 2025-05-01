@@ -54,7 +54,7 @@ pip install -r requirements.txt
 ## Notes
 
 - Dataset used: [ISIC 2019 Challenge Data](https://challenge2019.isic-archive.com/)
-- Trained weights: `model_weights.pt`
+- Trained weights: `model_weights_15.pt`
 - Label file: `labels.npy`
 - If training from scratch, ensure all image paths and metadata are configured properly in `train.py`.
 

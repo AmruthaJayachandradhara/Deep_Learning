@@ -81,3 +81,12 @@ See our full experimental pipeline, metrics, and training visualizations in the 
 
 - Dataset: [ISIC Archive](https://challenge.isic-archive.com/)
 - References and code inspiration listed in `Final_Report.pdf`
+
+### Model Weights
+
+The model weights file (`model_weights.pt`, ~45MB) is hosted externally due to GitHub file size limits.
+
+Download is handled automatically in the app using `gdown`:
+- Make sure to install it with:
+  ```bash
+  pip install gdown

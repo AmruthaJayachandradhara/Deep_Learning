@@ -86,7 +86,7 @@ streamlit run app.py
 
 Upload a skin lesion image and view predicted class probabilities interactively.
 
-## 📊 Highlights
+## Highlights
 
 - **Preprocessing**: Cropping gray borders, CLAHE contrast enhancement, and Ben Graham sharpening.
 - **Augmentation**: Horizontal/vertical flips, color jitter, random crop & rotation.

@@ -34,4 +34,5 @@ class MetricTracker:
         plt.legend()
 
         plt.tight_layout()
-        plt.show()
+        plt.savefig("training_plot.png")
+        plt.close() 

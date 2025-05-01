@@ -5,7 +5,7 @@ This repository contains the final deep learning project for Group 5, focused on
 
 ---
 
-## 🗂 Project Structure
+## Project Structure
 
 ```
 Final-Project-Group5/
@@ -28,7 +28,7 @@ Final-Project-Group5/
 
 ---
 
-## 🚀 Streamlit Web App
+## Streamlit Web App
 
 We built an interactive demo using [Streamlit](https://streamlit.io/) to showcase our trained melanoma classification model.
 
@@ -64,20 +64,20 @@ We built an interactive demo using [Streamlit](https://streamlit.io/) to showcas
 
 ---
 
-## 📊 Results
+## Results
 
 See our full experimental pipeline, metrics, and training visualizations in the final report.
 
 ---
 
-## 🤝 Contributors
+## Contributors
 
 - Rasika Nilatkar
 - Amrutha Jayachandradhara
 
 ---
 
-## 📄 License & References
+## License & References
 
 - Dataset: [ISIC Archive](https://challenge.isic-archive.com/)
 - References and code inspiration listed in `Final_Report.pdf`

@@ -108,22 +108,22 @@ optimizer = optim.Adam(model.parameters(), lr=1e-4)
 scheduler = ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=1, verbose=True)
 
 
-
+def train():
 #training
-for epoch in range(EPOCHS):
-    model.train()
-    train_loss = 0.0
-    for images, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{EPOCHS}"):
-        images, labels = images.to(DEVICE), labels.to(DEVICE)
-        optimizer.zero_grad()
-        outputs = model(images)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
-        train_loss += loss.item()
-    print(f"Epoch {epoch+1} Training Loss: {train_loss/len(train_loader):.4f}")
-    tracker.log_train_loss(train_loss / len(train_loader))
-    tracker.log_val_accuracy(correct / total)
+    for epoch in range(EPOCHS):
+        model.train()
+        train_loss = 0.0
+        for images, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{EPOCHS}"):
+            images, labels = images.to(DEVICE), labels.to(DEVICE)
+            optimizer.zero_grad()
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            train_loss += loss.item()
+        print(f"Epoch {epoch+1} Training Loss: {train_loss/len(train_loader):.4f}")
+        tracker.log_train_loss(train_loss / len(train_loader))
+        tracker.log_val_accuracy(correct / total)
 
 
 #evaluation
@@ -145,3 +145,7 @@ torch.save(model.state_dict(), MODEL_SAVE_PATH)
 print("Model weights saved at:", MODEL_SAVE_PATH)
 
 tracker.plot()
+
+
+if __name__ == "__main__":
+    train()
